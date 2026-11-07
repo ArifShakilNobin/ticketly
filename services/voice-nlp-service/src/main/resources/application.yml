@@ -1,0 +1,35 @@
+server:
+  port: ${SERVER_PORT:8082}
+
+spring:
+  application:
+    name: voice-nlp-service
+
+ticketly:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:ticketly-dev-secret-key-change-me-32-characters-min}
+      expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+voice:
+  stt:
+    provider: ${VOICE_STT_PROVIDER:mock}
+
+openai:
+  api-key: ${OPENAI_API_KEY:}
+  base-url: ${OPENAI_BASE_URL:https://api.openai.com}
+  model: ${OPENAI_TRANSCRIBE_MODEL:whisper-1}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS:health,info}
+  endpoint:
+    health:
+      show-details: ${HEALTH_SHOW_DETAILS:never}
+
+logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
+    com.ticketly.nlp: ${LOG_LEVEL_NLP:DEBUG}

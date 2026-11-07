@@ -1,0 +1,58 @@
+server:
+  port: ${SERVER_PORT:8083}
+
+spring:
+  application:
+    name: aggregator-service
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: ${REDIS_TIMEOUT:5000ms}
+    mongodb:
+      uri: ${MONGO_URI:mongodb://localhost:27017/ticketly}
+
+ticketly:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:ticketly-dev-secret-key-change-me-32-characters-min}
+      expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+cost-service:
+  url: ${COST_SERVICE_URL:http://localhost:8084}
+  connect-timeout-ms: ${COST_CONNECT_TIMEOUT_MS:1500}
+  read-timeout-ms: ${COST_READ_TIMEOUT_MS:3000}
+
+aggregator:
+  cache:
+    ttl-seconds: ${CACHE_TTL_SECONDS:60}
+  search-timeout-ms: ${SEARCH_TIMEOUT_MS:4000}
+  search-threads: ${SEARCH_THREADS:8}
+
+providers:
+  train:
+    enabled: ${TRAIN_PROVIDER_ENABLED:true}
+    base-url: ${TRAIN_PROVIDER_BASE_URL:}
+  bus:
+    enabled: ${BUS_PROVIDER_ENABLED:true}
+    base-url: ${BUS_PROVIDER_BASE_URL:}
+  launch:
+    enabled: ${LAUNCH_PROVIDER_ENABLED:true}
+    base-url: ${LAUNCH_PROVIDER_BASE_URL:}
+  flight:
+    enabled: ${FLIGHT_PROVIDER_ENABLED:true}
+    base-url: ${FLIGHT_PROVIDER_BASE_URL:}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS:health,info}
+  endpoint:
+    health:
+      show-details: ${HEALTH_SHOW_DETAILS:never}
+
+logging:
+  level:
+    root: ${LOG_LEVEL:INFO}
+    com.ticketly.aggregator: ${LOG_LEVEL_AGGREGATOR:DEBUG}

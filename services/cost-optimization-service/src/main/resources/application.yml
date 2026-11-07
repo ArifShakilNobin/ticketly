@@ -1,0 +1,42 @@
+server:
+  port: ${SERVER_PORT:8084}
+
+spring:
+  application:
+    name: cost-optimization-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/ticketly_offers}
+    username: ${DB_USER:ticketly}
+    password: ${DB_PASSWORD:ticketly}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: false
+
+cost:
+  convenience-fee: ${CONVENIENCE_FEE:20}
+
+ticketly:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:ticketly-dev-secret-key-change-me-32-characters-min}
+      expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: INFO

@@ -1,0 +1,56 @@
+server:
+  port: ${SERVER_PORT:8085}
+
+spring:
+  application:
+    name: booking-payment-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/ticketly_booking}
+    username: ${DB_USER:ticketly}
+    password: ${DB_PASSWORD:ticketly}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+  flyway:
+    enabled: false
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+cost-service:
+  url: ${COST_SERVICE_URL:http://localhost:8084}
+
+cost:
+  convenience-fee: ${CONVENIENCE_FEE:20}
+
+payment:
+  provider: ${PAYMENT_PROVIDER:mock}
+  mock:
+    max-amount: ${PAYMENT_MOCK_MAX_AMOUNT:500000}
+    force-failure: ${PAYMENT_MOCK_FORCE_FAILURE:false}
+
+ticketly:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:ticketly-dev-secret-key-change-me-32-characters-min}
+      expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+
+logging:
+  level:
+    root: INFO

@@ -1,0 +1,309 @@
+name: ticketly
+
+# ---------------------------------------------------------------------------
+# Ticketly platform.
+#
+#   docker compose up -d                    -> infrastructure only (postgres,
+#                                              mongo, redis, kafka)
+#   docker compose --profile apps up -d     -> infrastructure + all 7 services
+#                                              (requires `make build` first)
+# ---------------------------------------------------------------------------
+
+x-common-env: &common-env
+  TZ: Asia/Dhaka
+  JWT_SECRET: ${JWT_SECRET:-ticketly-dev-secret-key-change-me-32-characters-min}
+
+x-app-healthcheck: &app-healthcheck
+  test: ["CMD-SHELL", "curl -fsS http://localhost:$${SERVER_PORT}/actuator/health >/dev/null || exit 1"]
+  interval: 15s
+  timeout: 5s
+  retries: 10
+  start_period: 45s
+
+networks:
+  ticketly:
+    driver: bridge
+
+volumes:
+  ticketly-pgdata:
+  ticketly-mongo-data:
+  ticketly-redis-data:
+  ticketly-kafka-data:
+
+services:
+  # ------------------------------------------------------------------ infra
+  postgres:
+    image: postgres:16-alpine
+    container_name: ticketly-postgres
+    environment:
+      POSTGRES_USER: ticketly
+      POSTGRES_PASSWORD: ticketly
+      POSTGRES_DB: ticketly
+      TZ: Asia/Dhaka
+    ports:
+      - "${POSTGRES_HOST_PORT:-5433}:5432"
+    volumes:
+      - ticketly-pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ticketly -d ticketly"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks: [ticketly]
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    container_name: ticketly-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - ticketly-mongo-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks: [ticketly]
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: ticketly-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - ticketly-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    networks: [ticketly]
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:7.6.1
+    container_name: ticketly-kafka
+    ports:
+      - "9094:9094"
+    environment:
+      CLUSTER_ID: MkU3OEVBNTcwNTJENDM2Qk
+      KAFKA_NODE_ID: "1"
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092,EXTERNAL://localhost:9094"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT,EXTERNAL:PLAINTEXT"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: "0"
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - ticketly-kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics --bootstrap-server localhost:9092 --list >/dev/null 2>&1"]
+      interval: 15s
+      timeout: 10s
+      retries: 12
+      start_period: 40s
+    networks: [ticketly]
+    restart: unless-stopped
+
+  # ------------------------------------------------------------------- apps
+  user-service:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: services/user-service/target/user-service-0.1.0.jar
+    image: ticketly/user-service
+    container_name: ticketly-user-service
+    environment:
+      <<: *common-env
+      SERVER_PORT: "8081"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ticketly_user
+      SPRING_DATASOURCE_USERNAME: ticketly
+      SPRING_DATASOURCE_PASSWORD: ticketly
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck: *app-healthcheck
+    networks: [ticketly]
+    restart: unless-stopped
+
+  voice-nlp-service:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: services/voice-nlp-service/target/voice-nlp-service-0.1.0.jar
+    image: ticketly/voice-nlp-service
+    container_name: ticketly-voice-nlp-service
+    environment:
+      <<: *common-env
+      SERVER_PORT: "8082"
+      VOICE_STT_PROVIDER: ${VOICE_STT_PROVIDER:-mock}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    ports:
+      - "8082:8082"
+    healthcheck: *app-healthcheck
+    networks: [ticketly]
+    restart: unless-stopped
+
+  cost-optimization-service:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: services/cost-optimization-service/target/cost-optimization-service-0.1.0.jar
+    image: ticketly/cost-optimization-service
+    container_name: ticketly-cost-optimization-service
+    environment:
+      <<: *common-env
+      SERVER_PORT: "8084"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ticketly_offers
+      SPRING_DATASOURCE_USERNAME: ticketly
+      SPRING_DATASOURCE_PASSWORD: ticketly
+    ports:
+      - "8084:8084"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck: *app-healthcheck
+    networks: [ticketly]
+    restart: unless-stopped
+
+  aggregator-service:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: services/aggregator-service/target/aggregator-service-0.1.0.jar
+    image: ticketly/aggregator-service
+    container_name: ticketly-aggregator-service
+    environment:
+      <<: *common-env
+      SERVER_PORT: "8083"
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: "6379"
+      SPRING_DATA_MONGODB_URI: mongodb://mongo:27017/ticketly
+      COST_SERVICE_URL: http://cost-optimization-service:8084
+    ports:
+      - "8083:8083"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+      cost-optimization-service:
+        condition: service_healthy
+    healthcheck: *app-healthcheck
+    networks: [ticketly]
+    restart: unless-stopped
+
+  booking-payment-service:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: services/booking-payment-service/target/booking-payment-service-0.1.0.jar
+    image: ticketly/booking-payment-service
+    container_name: ticketly-booking-payment-service
+    environment:
+      <<: *common-env
+      SERVER_PORT: "8085"
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ticketly_booking
+      SPRING_DATASOURCE_USERNAME: ticketly
+      SPRING_DATASOURCE_PASSWORD: ticketly
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      COST_SERVICE_URL: http://cost-optimization-service:8084
+    ports:
+      - "8085:8085"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+      cost-optimization-service:
+        condition: service_healthy
+    healthcheck: *app-healthcheck
+    networks: [ticketly]
+    restart: unless-stopped
+
+  notification-service:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: services/notification-service/target/notification-service-0.1.0.jar
+    image: ticketly/notification-service
+    container_name: ticketly-notification-service
+    environment:
+      <<: *common-env
+      SERVER_PORT: "8086"
+      SPRING_DATA_MONGODB_URI: mongodb://mongo:27017/ticketly
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+    ports:
+      - "8086:8086"
+    depends_on:
+      mongo:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    healthcheck: *app-healthcheck
+    networks: [ticketly]
+    restart: unless-stopped
+
+  api-gateway:
+    profiles: ["apps"]
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        JAR_FILE: services/api-gateway/target/api-gateway-0.1.0.jar
+    image: ticketly/api-gateway
+    container_name: ticketly-api-gateway
+    environment:
+      <<: *common-env
+      SERVER_PORT: "8080"
+      USER_SERVICE_URL: http://user-service:8081
+      VOICE_NLP_SERVICE_URL: http://voice-nlp-service:8082
+      AGGREGATOR_SERVICE_URL: http://aggregator-service:8083
+      COST_SERVICE_URL: http://cost-optimization-service:8084
+      BOOKING_SERVICE_URL: http://booking-payment-service:8085
+      NOTIFICATION_SERVICE_URL: http://notification-service:8086
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-*}
+    ports:
+      - "8080:8080"
+    depends_on:
+      user-service:
+        condition: service_healthy
+      voice-nlp-service:
+        condition: service_healthy
+      aggregator-service:
+        condition: service_healthy
+      cost-optimization-service:
+        condition: service_healthy
+      booking-payment-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+    healthcheck: *app-healthcheck
+    networks: [ticketly]
+    restart: unless-stopped
