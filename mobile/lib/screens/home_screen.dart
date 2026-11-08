@@ -15,11 +15,16 @@ import '../widgets/route_picker.dart';
 import '../widgets/selectable_chip.dart';
 import '../widgets/transport_type_chips.dart';
 import '../widgets/voice_button.dart';
-import 'booking_checkout_placeholder_removed.dart';
 import 'my_bookings_screen.dart';
 import 'notifications_screen.dart';
 import 'profile_screen.dart';
 import 'results_screen.dart';
+
+/// Which tab of the [HomeScreen] shell is on screen.
+///
+/// Routes pushed on top of the shell (the booking checkout, for example) set
+/// this before popping back so the passenger lands on the tab they asked for.
+final ValueNotifier<int> homeTabIndex = ValueNotifier<int>(0);
 
 /// Top level shell: search / bookings / profile plus the notifications bell.
 class HomeScreen extends StatefulWidget {
@@ -36,7 +41,31 @@ class _HomeScreenState extends State<HomeScreen> {
     'প্রোফাইল',
   ];
 
-  int _index = 0;
+  int _index = homeTabIndex.value >= 0 && homeTabIndex.value < 3
+      ? homeTabIndex.value
+      : 0;
+
+  @override
+  void initState() {
+    super.initState();
+    homeTabIndex.addListener(_syncTab);
+  }
+
+  /// Applies a tab change requested by a child route after it popped back.
+  void _syncTab() {
+    final target = homeTabIndex.value;
+    if (!mounted || target == _index || target < 0 || target > 2) return;
+    setState(() => _index = target);
+  }
+
+  @override
+  void dispose() {
+    homeTabIndex.removeListener(_syncTab);
+    super.dispose();
+  }
+
+  /// Switches the shell to [value]; the listener above performs the rebuild.
+  void _selectTab(int value) => homeTabIndex.value = value;
 
   void _openNotifications() {
     Navigator.of(context).push(
@@ -75,7 +104,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
-        onDestinationSelected: (value) => setState(() => _index = value),
+        onDestinationSelected: _selectTab,
         destinations: const <NavigationDestination>[
           NavigationDestination(
             icon: Icon(Icons.search_outlined),
@@ -248,7 +277,9 @@ class _HomeTabState extends State<_HomeTab> {
       lastDate: today.add(const Duration(days: 180)),
     );
     if (picked == null || !mounted) return;
-    setState(() => _travelDate = DateTime(picked.year, picked.month, picked.day));
+    setState(
+      () => _travelDate = DateTime(picked.year, picked.month, picked.day),
+    );
   }
 
   Future<void> _runSearch() async {
@@ -323,15 +354,17 @@ class _HomeTabState extends State<_HomeTab> {
           children: <Widget>[
             Text(
               'কীভাবে যেতে চান বলুন',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w800),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
               'যেমন: “আগামী শুক্রবার ঢাকা থেকে খুলনার সবচেয়ে কম ভাড়ার টিকিট দেখাও”',
               textAlign: TextAlign.center,
-              style: theme.textTheme.bodySmall
-                  ?.copyWith(color: const Color(0xFF6B726B)),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: const Color(0xFF6B726B),
+              ),
             ),
             const SizedBox(height: 18),
             VoiceButton(
@@ -368,8 +401,9 @@ class _HomeTabState extends State<_HomeTab> {
                 Expanded(
                   child: Text(
                     'শোনা হয়েছে: “${heard ?? '—'}”',
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(fontWeight: FontWeight.w600),
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
                 Text(
@@ -416,8 +450,9 @@ class _HomeTabState extends State<_HomeTab> {
           children: <Widget>[
             Text(
               'নিজে খুঁজে দেখুন',
-              style: theme.textTheme.titleMedium
-                  ?.copyWith(fontWeight: FontWeight.w800),
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const SizedBox(height: 14),
             RoutePicker(
@@ -518,8 +553,9 @@ class _HomeTabState extends State<_HomeTab> {
             Expanded(
               child: Text(
                 'চলতি অফার ও ক্যাশব্যাক',
-                style: theme.textTheme.titleMedium
-                    ?.copyWith(fontWeight: FontWeight.w800),
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                ),
               ),
             ),
             if (app.offersLoading && offers.isEmpty)
@@ -537,8 +573,11 @@ class _HomeTabState extends State<_HomeTab> {
               padding: const EdgeInsets.all(14),
               child: Row(
                 children: <Widget>[
-                  const Icon(Icons.cloud_off_outlined,
-                      size: 20, color: Color(0xFF6B726B)),
+                  const Icon(
+                    Icons.cloud_off_outlined,
+                    size: 20,
+                    color: Color(0xFF6B726B),
+                  ),
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
@@ -571,9 +610,7 @@ class _HomeTabState extends State<_HomeTab> {
               scrollDirection: Axis.horizontal,
               itemCount: offers.length,
               separatorBuilder: (context, index) => const SizedBox(width: 10),
-              itemBuilder: (context, index) => _OfferCard(
-                offer: offers[index],
-              ),
+              itemBuilder: (context, index) => _OfferCard(offer: offers[index]),
             ),
           ),
       ],
@@ -582,7 +619,7 @@ class _HomeTabState extends State<_HomeTab> {
 }
 
 class _OfferCard extends StatelessWidget {
-  const _OfferCard({super.key, required this.offer});
+  const _OfferCard({required this.offer});
 
   final Offer offer;
 
@@ -600,24 +637,27 @@ class _OfferCard extends StatelessWidget {
             children: <Widget>[
               Row(
                 children: <Widget>[
-                  const Icon(Icons.savings_outlined,
-                      size: 18, color: kSavingsColor),
+                  const Icon(
+                    Icons.savings_outlined,
+                    size: 18,
+                    color: kSavingsColor,
+                  ),
                   const SizedBox(width: 6),
                   Expanded(
                     child: Text(
                       offer.title,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w800),
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 8),
               Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
                 decoration: BoxDecoration(
                   color: kSavingsColor.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
@@ -638,16 +678,14 @@ class _OfferCard extends StatelessWidget {
                     : 'প্রোভাইডার: ${offer.provider}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style:
-                    const TextStyle(fontSize: 12, color: Color(0xFF6B726B)),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF6B726B)),
               ),
               const Spacer(),
               Text(
                 payments.isEmpty ? 'সব পেমেন্ট' : payments,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style:
-                    const TextStyle(fontSize: 12, color: Color(0xFF6B726B)),
+                style: const TextStyle(fontSize: 12, color: Color(0xFF6B726B)),
               ),
             ],
           ),

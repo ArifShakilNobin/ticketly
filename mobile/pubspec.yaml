@@ -1,5 +1,5 @@
 name: ticketly
-description: "A new Flutter project."
+description: "Voice-first ticketing app for the Ticketly platform — search and book train, bus, launch and flight tickets in Bangladesh."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
 publish_to: 'none' # Remove this line if you wish to publish to pub.dev

@@ -31,21 +31,20 @@ DateFormat _dateFormat(DateFormat Function() create) {
   }
 }
 
-late final NumberFormat _bdtWhole = _currencyFormat(0);
-late final NumberFormat _bdtFraction = _currencyFormat(2);
+final NumberFormat _bdtWhole = _currencyFormat(0);
+final NumberFormat _bdtFraction = _currencyFormat(2);
 
-late final DateFormat _shortDate = _dateFormat(() => DateFormat.yMMMd('bn_BD'));
-late final DateFormat _shortDateWithWeekday = _dateFormat(
+final DateFormat _shortDate = _dateFormat(() => DateFormat.yMMMd('bn_BD'));
+final DateFormat _shortDateWithWeekday = _dateFormat(
   () => DateFormat('EEE, d MMM y', 'bn_BD'),
 );
-late final DateFormat _dateTime = _dateFormat(
+final DateFormat _dateTime = _dateFormat(
   () => DateFormat.yMMMd('bn_BD').add_Hm(),
 );
 
 /// Formats [amount] as Taka, e.g. `৳১,২৫০`.
 String formatBdt(num amount) {
-  final formatter =
-      amount == amount.roundToDouble() ? _bdtWhole : _bdtFraction;
+  final formatter = amount == amount.roundToDouble() ? _bdtWhole : _bdtFraction;
   return formatter.format(amount);
 }
 

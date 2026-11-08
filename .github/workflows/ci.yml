@@ -42,3 +42,7 @@ jobs:
       - name: Analyse
         working-directory: mobile
         run: flutter analyze
+
+      - name: Unit tests
+        working-directory: mobile
+        run: flutter test

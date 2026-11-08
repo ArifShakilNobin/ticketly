@@ -237,6 +237,14 @@ The smoke test registers a user, parses a Bengali query, searches all four trans
 modes, checks the offer catalogue, books (mock bKash), lists bookings, waits for the
 Kafka-driven notification, and cancels.
 
+The Flutter app has its own checks, both run in CI:
+
+```bash
+cd mobile
+flutter analyze   # must report no issues
+flutter test      # models, pricing, formatting, screen smoke tests
+```
+
 ---
 
 ## Project layout

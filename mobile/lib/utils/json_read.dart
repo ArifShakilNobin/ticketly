@@ -1,5 +1,6 @@
 /// Tolerant readers used by every `fromJson` so a malformed payload degrades
 /// to a sensible default instead of throwing at runtime.
+library;
 
 String? stringOrNull(dynamic value) {
   if (value is! String) return null;
