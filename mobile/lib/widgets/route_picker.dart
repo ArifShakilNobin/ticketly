@@ -137,7 +137,6 @@ class RoutePicker extends StatelessWidget {
 /// The suggestion list rendered under a focused [CityField].
 class _CityOptionsView extends StatelessWidget {
   const _CityOptionsView({
-    super.key,
     required this.options,
     required this.onSelected,
   });

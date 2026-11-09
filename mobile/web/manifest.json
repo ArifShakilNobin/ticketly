@@ -1,11 +1,11 @@
 {
-    "name": "ticketly",
-    "short_name": "ticketly",
+    "name": "টিকেটলি · Ticketly",
+    "short_name": "Ticketly",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#00674B",
+    "theme_color": "#00674B",
+    "description": "Voice-first ticketing app for the Ticketly platform.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
