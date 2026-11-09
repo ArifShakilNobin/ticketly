@@ -99,6 +99,28 @@ Hold the mic button, speak, and the app fills the search form from the parsed qu
 route, transport, date, budget and priority are all extracted client-side from
 `POST /api/v1/nlp/parse`.
 
+### Screens
+
+| Screen | File | What it does |
+|---|---|---|
+| Splash | `splash_screen.dart` | Restores the cached session, routes to login or the home shell |
+| Login | `login_screen.dart` | Sign in with phone/e-mail + password |
+| Register | `register_screen.dart` | Create a new account |
+| Home shell | `home_screen.dart` | Three-tab shell (search / bookings / profile) + notifications bell; `homeTabIndex` lets child routes switch tabs |
+| Search | `home_screen.dart` (`_HomeTab`) | Route picker, voice input, transport/date/budget filters → `POST /api/v1/nlp/parse`, `POST /api/v1/search` |
+| Results | `results_screen.dart` | Optimised fares, sort chips (price/duration), inline price breakdown |
+| Checkout | `booking_checkout_screen.dart` | Passenger + payment + promo form, creates the booking, shows the inline success state |
+| My bookings | `my_bookings_screen.dart` | Booking list with an inline detail bottom sheet (cancel with reason) |
+| Notifications | `notifications_screen.dart` | Unread list, marks everything read on open |
+| Profile | `profile_screen.dart` | Identity, account details, sign out |
+
+### Current status
+
+All ten screens are implemented and wired to the gateway; `flutter analyze`
+reports no issues and `flutter test` passes (models, pricing, formatting and
+screen smoke tests). Payment, STT and transport providers run against mocks
+unless real keys/URLs are configured — see [Configuration](#configuration).
+
 ---
 
 ## API reference
