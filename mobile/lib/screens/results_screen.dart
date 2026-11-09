@@ -36,11 +36,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
   SearchResponse? _response;
   String? _error;
   bool _loading = true;
-  String? _error;
   ResultSort _sort = ResultSort.effectivePrice;
-
-  /// Keeps the fares as they arrived so switching the sort never re-fetches.
-  List<OptimizedFare> _items = const <OptimizedFare>[];
 
   @override
   void initState() {
@@ -53,7 +49,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
   }
 
   Future<void> _search() async {
-    final app = context.read<AppState>();
     setState(() {
       _loading = true;
       _error = null;
@@ -64,7 +59,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
       if (!mounted) return;
       setState(() {
         _response = response;
-        _items = response.items;
         _loading = false;
       });
     } catch (error) {

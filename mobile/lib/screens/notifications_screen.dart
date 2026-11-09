@@ -45,7 +45,6 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
   Widget build(BuildContext context) {
     final app = context.watch<AppState>();
     final theme = Theme.of(context);
-    final app = context.watch<AppState>();
     final items = app.notifications;
 
     final Widget body;

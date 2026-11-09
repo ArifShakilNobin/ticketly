@@ -12,7 +12,6 @@ import '../widgets/booking_status_chip.dart';
 import '../widgets/empty_view.dart';
 import '../widgets/error_view.dart';
 import '../widgets/loading_view.dart';
-import 'booking_detail_screen.dart';
 
 /// Everything the signed-in passenger has booked, newest first.
 ///

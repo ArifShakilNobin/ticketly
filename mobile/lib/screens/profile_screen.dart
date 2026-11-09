@@ -7,7 +7,6 @@ import '../utils/format.dart';
 import '../widgets/empty_view.dart';
 import '../widgets/loading_view.dart';
 import 'login_screen.dart';
-import 'my_bookings_screen.dart';
 
 /// The signed-in passenger: identity, account details and sign out.
 class ProfileScreen extends StatelessWidget {
